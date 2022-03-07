@@ -40,7 +40,31 @@
   background-color: lightsteelblue;
 }
 
-.button {
+.step {
+  background-color: yellow;
+}
+
+.input-select {
   padding: 10px;
   margin: 5px;
+  font-weight: bold;
+  color: black;
+}
+
+.button-find-path {
+  padding: 10px;
+  margin: 5px;
+  background-color: rgb(159, 201, 146);
+  border-radius: 5px;
+  font-weight: bold;
+  color: black;
+}
+
+.button-reset {
+  padding: 10px;
+  margin: 5px;
+  background-color: rgb(182, 77, 29);
+  border-radius: 5px;
+  font-weight: bold;
+  color: black;
 }

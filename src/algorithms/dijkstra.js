@@ -1,18 +1,21 @@
 import PriorityQueue from "js-priority-queue";
 
-function djikstra(cellStates, startAndEnd, callback) {
+function djikstra(cellStates, startAndEnd) {
     const weights = [];
     for (let i = 0; i < Object.keys(cellStates).length; i++) {
         weights.push([]);
         for (let j = 0; j < Object.keys(cellStates[i]).length; j++) {
             if (cellStates[i][j].isWall) {
-                weights[i][j] = Infinity;
+                weights[i].push(Infinity);
             }
             else {
-                weights[i][j] = 1;
+                weights[i].push(1);
             }
         }
     }
+
+    const visited = [];
+    const path = {};
     const { start, end } = startAndEnd;
     const moves = [[0, 1], [1, 0], [0, -1], [-1, 0]];
     const distances = {};
@@ -29,12 +32,17 @@ function djikstra(cellStates, startAndEnd, callback) {
     }
     distances[start.row][start.col] = 0;
 
-    queue.queue({ row: start.row, col: start.col });
+    queue.queue({ row: start.row, col: start.col, prev: null });
 
+    // console.log(weights);
     while (queue.length > 0) {
         let node = queue.dequeue()
+        if (node.prev) {
+            path[node.row] = path[node.row] || {};
+            path[node.row][node.col] = node.prev;
+        }
         if (node.row === end.row && node.col === end.col) {
-            return;
+            break;
         }
 
         for (let i = 0; i < moves.length; i++) {
@@ -47,13 +55,12 @@ function djikstra(cellStates, startAndEnd, callback) {
             let alt = distances[node.row][node.col] + weights[x][y];
             if (alt < distances[x][y]) {
                 distances[x][y] = alt;
-                queue.queue({ row: x, col: y });
-                ((val) => {
-                    callback(val);
-                })({ row: x, col: y });
+                queue.queue({ row: x, col: y, prev: { row: node.row, col: node.col } });
+                visited.push({ row: x, col: y });
             }
         }
     }
+    return { visited: visited, path: path };
 }
 
 export default djikstra;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Row from "./row";
 import Cell from "./cell";
 import djikstra from "../algorithms/dijkstra";
@@ -6,12 +6,13 @@ import djikstra from "../algorithms/dijkstra";
 function Grid(props) {
   const R = props.rows;
   const C = props.cols;
+  const delayFactor = 5;
   const getInitalCellStates = () => {
     let cellStates = {};
     for (let i = 0; i < R; i++) {
       cellStates[i] = {};
       for (let j = 0; j < C; j++) {
-        cellStates[i][j] = { isVisited: false, isWall: false };
+        cellStates[i][j] = { isWall: false };
       }
     }
     return cellStates;
@@ -19,30 +20,79 @@ function Grid(props) {
   const [searching, setSearching] = useState(false);
   const [selector, setSelector] = useState("start");
   const [cellStates, setCellStates] = useState(getInitalCellStates());
-  const [visited, setVisited] = useState({});
   const [startAndEnd, setStartAndEnd] = useState({});
   const [mouseDown, setMouseDown] = useState(false);
 
-  useEffect(() => {
-    if (
-      visited &&
-      (visited.row || visited.row == 0) &&
-      (visited.col || visited.col == 0) &&
-      cellStates
-    ) {
-      cellStates[visited.row][visited.col].isVisited = true;
-      setCellStates({ ...cellStates });
-    }
-  }, [visited]);
-
   const findPath = () => {
-    djikstra(cellStates, startAndEnd, (visited) => {
+    const { visited, path } = djikstra(cellStates, startAndEnd);
+    let from = startAndEnd.end;
+    let to = startAndEnd.start;
+    let srcToDst = [];
+    while (from.row !== to.row || from.col !== to.col) {
+      from = path[from.row][from.col];
+      if (
+        !from ||
+        (!from.row && from.row !== 0) ||
+        (!from.col && from.col !== 0)
+      )
+        break;
+      if (!to || (!to.row && to.row !== 0) || (!to.col && to.col !== 0)) break;
+      if (from.row === to.row && from.col === to.col) break;
+      srcToDst.unshift(from);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+      for (let index = 0; index < visited.length; index++) {
+        let elem = document.getElementById(
+          `${visited[index].row},${visited[index].col}`
+        );
+        if (elem.classList.contains("end")) {
+          continue;
+        }
+
+        ((delay, elem, count) => {
+          setTimeout(() => {
+            elem.classList.add("visited");
+            if (count === visited.length - 1) {
+              resolve();
+            }
+          }, delay);
+        })(delayFactor * index, elem, index);
+      }
       setTimeout(() => {
-        setVisited(visited);
-        setSearching(true);
-      }, 0);
+        resolve();
+      }, 2500);
     });
-    setSearching(false);
+    promise.then(() => {
+      for (let index = 0; index < srcToDst.length; index++) {
+        let step = srcToDst[index];
+        let elem = document.getElementById(`${step.row},${step.col}`);
+        if (elem.classList.contains("end")) {
+          continue;
+        }
+        ((delay, elem) => {
+          setTimeout(() => {
+            elem.classList.add("step");
+          }, delay);
+        })(10 * delayFactor * index, elem);
+      }
+    });
+  };
+
+  const nodeTypes = () => {
+    return (
+      <select
+        value={selector}
+        className="input-select"
+        onChange={(ev) => {
+          setSelector(ev.target.value);
+        }}
+      >
+        <option value="start">Start Node</option>
+        <option value="end">End Node</option>
+        <option value="wall">Wall</option>
+      </select>
+    );
   };
 
   const rows = (cellStates) => {
@@ -55,7 +105,6 @@ function Grid(props) {
             key={`${i},${j}`}
             row={i}
             col={j}
-            isVisited={cellStates[i][j].isVisited}
             isWall={cellStates[i][j].isWall}
             isStart={
               startAndEnd.start &&
@@ -72,7 +121,6 @@ function Grid(props) {
                 cellStates[cellCoord.row][cellCoord.col] = {
                   row: cellCoord.row,
                   col: cellCoord.col,
-                  isVisited: false,
                   isWall: true,
                 };
                 setCellStates({ ...cellStates });
@@ -96,7 +144,6 @@ function Grid(props) {
                 case "wall":
                   let isWall = cellStates[selected.row][selected.col].isWall;
                   cellStates[selected.row][selected.col].isWall = !isWall;
-                  cellStates[selected.row][selected.col].isVisited = false;
                   break;
                 default:
                   if (
@@ -126,6 +173,12 @@ function Grid(props) {
     setSelector("start");
     setCellStates(getInitalCellStates());
     setStartAndEnd({});
+    for (let i = 0; i < R; i++) {
+      for (let j = 0; j < C; j++) {
+        document.getElementById(`${i},${j}`).classList.remove("visited");
+        document.getElementById(`${i},${j}`).classList.remove("step");
+      }
+    }
   };
   return (
     <>
@@ -137,38 +190,15 @@ function Grid(props) {
         {rows(cellStates)}
       </div>
       <div>
+        {nodeTypes()}
         <button
-          className="button"
-          onClick={() => {
-            setSelector("start");
-          }}
-        >
-          Start
-        </button>
-        <button
-          className="button"
-          onClick={() => {
-            setSelector("end");
-          }}
-        >
-          End
-        </button>
-        <button
-          className="button"
-          onClick={() => {
-            setSelector("wall");
-          }}
-        >
-          Wall
-        </button>
-        <button
-          className="button"
+          className="button-find-path"
           disabled={!startAndEnd.start || !startAndEnd.end || searching}
           onClick={findPath}
         >
-          Find path!
+          Find path
         </button>
-        <button className="button" disabled={searching} onClick={reset}>
+        <button className="button-reset" disabled={searching} onClick={reset}>
           Reset
         </button>
       </div>

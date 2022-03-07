@@ -6,10 +6,10 @@ function Cell(props) {
     start: props.isStart,
     end: props.isEnd,
     wall: props.isWall,
-    visited: props.isVisited && !props.isStart && !props.isEnd && !props.isWall,
   });
   return (
     <div
+      id={`${props.row},${props.col}`}
       className={className}
       row={props.row}
       col={props.col}
